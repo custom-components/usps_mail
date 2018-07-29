@@ -31,7 +31,7 @@ CONF_PROVIDER = 'provider'
 CONF_INBOXFOLDER = 'inbox_folder'
 CONF_OUTDIR = 'output_dir'
 
-INTERVAL = timedelta(hours=1)
+INTERVAL = timedelta(minutes=10)
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
@@ -57,16 +57,16 @@ def setup(hass, config):
     password = config[DOMAIN][CONF_PASSWORD]
     usps_mail = UspsMail(hass, mailserver, port, inbox_folder, output_dir, username, password)
 
-    if os.path.isdir(output_dir):
-        def scan_mail_service(call):
-            """Set up service for manual trigger."""
-            usps_mail.scan_mail(call)
-        track_time_interval(hass, usps_mail.scan_mail, INTERVAL)
-        hass.services.register(DOMAIN, 'scan_mail', scan_mail_service)
-        return True
-    else:
+    if output_dir != 'None' and not os.path.isdir(output_dir):
         _LOGGER.critical("The dir %s does not exist.", output_dir)
         return False
+    def scan_mail_service(call):
+        """Set up service for manual trigger."""
+        usps_mail.scan_mail(call)
+    track_time_interval(hass, usps_mail.scan_mail, INTERVAL)
+    hass.services.register(DOMAIN, 'scan_mail', scan_mail_service)
+    return True
+
 
 
 class UspsMail:
