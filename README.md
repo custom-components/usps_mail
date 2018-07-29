@@ -33,13 +33,15 @@ usps_mail:
 | **provider** | | yes | Your mail provider, can be `gmail`, `outlook`, `yahoo`
 | **email** | | yes | Your email address
 | **password** | | yes | Your mail password, if you have 2FA enabled you need to create a `App password` for this.
-| **output_dir** | | yes | The directory where it wil put a gif, should be `%configdir%/www`
+| **output_dir** | None | no | The directory where it wil put a gif, should be `%configdir%/www`
 | **inbox_folder** | `Inbox` | no | The folder in your inbox where these mails are
 | **port** | `993` | no | The IMAP port that the provider is using.
 
 ***
 
 ## To get a camera feed of your gif (pending mails)
+
+**NB!: This require you to set a `output_dir` in the configuration for `usps_mail`**
 
 Add this to your `configuration.yaml`
 

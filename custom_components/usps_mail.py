@@ -38,7 +38,7 @@ CONFIG_SCHEMA = vol.Schema({
         vol.Required(CONF_PROVIDER): cv.string,
         vol.Required(CONF_EMAIL): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
-        vol.Required(CONF_OUTDIR): cv.string,
+        vol.Optional(CONF_OUTDIR, default='None'): cv.string,
         vol.Optional(CONF_INBOXFOLDER, default='Inbox'): cv.string,
         vol.Optional(CONF_PORT, default='993'): cv.string,
     })
@@ -130,17 +130,19 @@ class UspsMail:
                 _LOGGER.debug("Found %s mails and images in your email.", image_count)
 
                 if image_count > 0:
-                    _LOGGER.debug("Creating animated gif out of %s images.", image_count)
-                    for filename in images:
-                        imgfiles.append(imageio.imread(filename))
-                    kargs = {'duration': 5}
-                    imageio.mimsave(self._output_dir + 'USPS.gif', imgfiles, 'GIF', **kargs)
-                    _LOGGER.debug("Cleaning up...")
-                    for image in images:
-                        os.remove(image)
+                    if self._output_dir != 'None':
+                        _LOGGER.debug("Creating animated gif out of %s images.", image_count)
+                        for filename in images:
+                            imgfiles.append(imageio.imread(filename))
+                        kargs = {'duration': 5}
+                        imageio.mimsave(self._output_dir + 'USPS.gif', imgfiles, 'GIF', **kargs)
+                        _LOGGER.debug("Cleaning up...")
+                        for image in images:
+                            os.remove(image)
         if image_count == 0:
             _LOGGER.debug("Found %s mails", image_count)
-            default_image(self._output_dir)
+            if self._output_dir != 'None':
+                default_image(self._output_dir)
         return image_count
 
     def package_count(self, account):
