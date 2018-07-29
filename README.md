@@ -52,6 +52,13 @@ camera:
 
 ***
 
+## Updates
+
+This component are subject to change.\
+To make sure you get notified about upcoming releases you should also get the [custom_updater](https://github.com/custom-components/custom_updater) component.
+
+***
+
 ## Activate Debug logging
 
 Put this in your `configuration.yaml`
