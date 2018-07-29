@@ -5,7 +5,7 @@ This component is based of the work of [skalavala](https://github.com/skalavala)
 
 ***
 ⚠️ **Before you start using this make sure that you read this article on [skalavala's blog](https://skalavala.github.io/usps/).**\
-Read down to `Prerequisites` from that part this component takes care of the rest.
+Read down to `Prerequisites`, from that part this component takes care of the rest.
 ***
 
 ## Installation
