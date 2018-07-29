@@ -38,7 +38,7 @@ usps_mail:
 
 ***
 
-## To get a camerafeed of your gif (pending mails)
+## To get a camera feed of your gif (pending mails)
 
 Add this to your `configuration.yaml`
 
