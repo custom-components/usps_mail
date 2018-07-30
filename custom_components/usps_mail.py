@@ -14,8 +14,8 @@ from datetime import timedelta
 import imaplib
 import base64
 import sys
-import mimetypes
 import os
+import requests
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.const import (CONF_PASSWORD, CONF_EMAIL, CONF_PORT)
