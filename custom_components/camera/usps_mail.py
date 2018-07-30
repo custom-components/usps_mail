@@ -14,6 +14,7 @@ import os
 from homeassistant.components.camera import Camera
 from custom_components.usps_mail import USPS_MAIL_DATA
 
+__version__ = '0.0.1'
 _LOGGER = logging.getLogger(__name__)
 
 CONF_FILE_PATH = 'file_path'
