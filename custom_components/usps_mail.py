@@ -57,9 +57,10 @@ def setup(hass, config):
     password = config[DOMAIN][CONF_PASSWORD]
     usps_mail = UspsMail(hass, mailserver, port, inbox_folder, output_dir, username, password)
 
-    if output_dir != 'None' and not os.path.isdir(output_dir):
-        _LOGGER.critical("The dir %s does not exist.", output_dir)
-        return False
+    if output_dir != 'None':
+        if not os.path.isdir(output_dir):
+            _LOGGER.critical("The dir %s does not exist.", output_dir)
+            return False
     def scan_mail_service(call):
         """Set up service for manual trigger."""
         usps_mail.scan_mail(call)
