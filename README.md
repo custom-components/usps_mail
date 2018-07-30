@@ -14,6 +14,8 @@ Read down to `Prerequisites`, from that part this component takes care of the re
 
 Install this component by copying `/custom_components/usps_mail.py` from this repo to `<config directory>/custom_components/usps_mail.py` on your Home Assistant instanse.
 
+You do **not** need to get the `/custom_components/camera/usps_mail.py` file, the component will download this for you if it's needed.
+
 ### Step 2
 
 Add this to your `configuration.yaml`
@@ -33,24 +35,15 @@ usps_mail:
 | **provider** | | yes | Your mail provider, can be `gmail`, `outlook`, `yahoo`
 | **email** | | yes | Your email address
 | **password** | | yes | Your mail password, if you have 2FA enabled you need to create a `App password` for this.
-| **output_dir** | None | no | The directory where it wil put a gif, should be `%configdir%/www`
+| **output_dir** | None | no | The directory where it wil put a gif, should be `%configdir%/www/USPS/`
 | **inbox_folder** | `Inbox` | no | The folder in your inbox where these mails are
 | **port** | `993` | no | The IMAP port that the provider is using.
 
 ***
 
-## To get a camera feed of your gif (pending mails)
+## config option `output_dir`
 
-**NB!: This require you to set a `output_dir` in the configuration for `usps_mail`**
-
-Add this to your `configuration.yaml`
-
-```yaml
-camera:
-  - platform: local_file
-    name: USPS Mail Pictures
-    file_path: /config/www/USPS.gif
-```
+By setting this option the component wil download and load a camera platform to serve a `.GIF` that is generated from your mails.
 
 ***
 

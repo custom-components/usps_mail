@@ -14,10 +14,12 @@ from datetime import timedelta
 import imaplib
 import base64
 import sys
+import mimetypes
 import os
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.const import (CONF_PASSWORD, CONF_EMAIL, CONF_PORT)
+from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.event import track_time_interval
 
 __version__ = '0.0.1'
@@ -31,7 +33,7 @@ CONF_PROVIDER = 'provider'
 CONF_INBOXFOLDER = 'inbox_folder'
 CONF_OUTDIR = 'output_dir'
 
-INTERVAL = timedelta(minutes=10)
+INTERVAL = timedelta(hours=1)
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
@@ -44,6 +46,7 @@ CONFIG_SCHEMA = vol.Schema({
     })
 }, extra=vol.ALLOW_EXTRA)
 
+CAMERA_URL = 'https://raw.githubusercontent.com/custom-components/usps_mail/dev/custom_components/camera/usps_mail.py'
 
 def setup(hass, config):
     """Set up this component."""
@@ -61,13 +64,19 @@ def setup(hass, config):
         if not os.path.isdir(output_dir):
             _LOGGER.critical("The dir %s does not exist.", output_dir)
             return False
+        else:
+            camera_dir = str(hass.config.path("custom_components/camera/"))
+            camera_file = 'usps_mail.py'
+            camera_full_path = camera_dir + camera_file
+            if not os.path.isfile(camera_full_path):
+                get_sensor(camera_file, camera_dir)
+            load_platform(hass, 'camera', DOMAIN)
     def scan_mail_service(call):
         """Set up service for manual trigger."""
         usps_mail.scan_mail(call)
     track_time_interval(hass, usps_mail.scan_mail, INTERVAL)
     hass.services.register(DOMAIN, 'scan_mail', scan_mail_service)
     return True
-
 
 
 class UspsMail:
@@ -83,6 +92,7 @@ class UspsMail:
         self._password = password
         self._output_dir = output_dir
         self.hass.data[USPS_MAIL_DATA] = {}
+        self.hass.data[USPS_MAIL_DATA]['output_dir'] = output_dir
         self.scan_mail('now')
 
     def scan_mail(self, call):
@@ -108,6 +118,7 @@ class UspsMail:
         """Get mail count from mail"""
         import imageio
         today = get_formatted_date()
+        _LOGGER.debug('Searching for mails from %s', today)
         image_count = 0
         rv, data = account.search(None, '(SUBJECT "Informed Delivery Daily Digest" SINCE "' + today + '")')
         if rv == 'OK':
@@ -184,11 +195,30 @@ def get_mailserver(provider):
 def get_formatted_date():
     """Returns today in specific format"""
     return datetime.datetime.today().strftime('%d-%b-%Y')
+    #return '29-07-2018'
 
 def select_folder(account, inbox_folder):
     """Select the folder in the inbox to use"""
     #account.list()
     account.select(inbox_folder)
+
+def get_sensor(camera_file, camera_dir):
+    """Downloading the camera"""
+    _LOGGER.debug('Could not find %s in %s.', camera_file, camera_dir)
+    sensor_full_path = camera_dir + camera_file
+    response = requests.get(CAMERA_URL)
+    if response.status_code == 200:
+        _LOGGER.debug('Checking folder structure')
+        directory = os.path.dirname(camera_dir)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        with open(sensor_full_path, 'wb+') as sensorfile:
+            sensorfile.write(response.content)
+        task_state = True
+    else:
+        _LOGGER.critical('Failed to download camera from %s', CAMERA_URL)
+        task_state = False
+    return task_state
 
 def default_image(outdir):
     """Set a default image if there is none from mail"""
