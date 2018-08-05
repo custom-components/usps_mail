@@ -25,7 +25,7 @@ usps_mail:
   provider: gmail
   email: 'username@gamil.com'
   password: 'fjkhg347847idsbj'
-  output_dir: '/config/www/USPS'
+  output_dir: '/config/www/USPS/'
 ```
 
 #### Optional config options
