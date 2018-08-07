@@ -104,8 +104,8 @@ class UspsMail:
 
     def get_mails(self, account):
         """Get mail count from mail"""
-        #today = get_formatted_date()
-        today = '29-Jul-2018'
+        today = get_formatted_date()
+        #today = '29-Jul-2018'
         _LOGGER.debug('Searching for mails from %s', today)
         image_count = 0
         rv, data = account.search(None, '(SUBJECT "Informed Delivery Daily Digest" SINCE "' + today + '")')
