@@ -25,7 +25,6 @@ usps_mail:
   provider: gmail
   email: 'username@gamil.com'
   password: 'fjkhg347847idsbj'
-  output_dir: '/config/www/USPS'
 ```
 
 #### Optional config options
@@ -35,15 +34,8 @@ usps_mail:
 | **provider** | | yes | Your mail provider, can be `gmail`, `outlook`, `yahoo`
 | **email** | | yes | Your email address
 | **password** | | yes | Your mail password, if you have 2FA enabled you need to create a `App password` for this.
-| **output_dir** | None | no | The directory where it wil put a gif, should be `%configdir%/www/USPS/`
 | **inbox_folder** | `Inbox` | no | The folder in your inbox where these mails are
 | **port** | `993` | no | The IMAP port that the provider is using.
-
-***
-
-## config option `output_dir`
-
-By setting this option the component wil download and load a camera platform to serve a `.GIF` that is generated from your mails.
 
 ***
 

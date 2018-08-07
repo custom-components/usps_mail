@@ -7,40 +7,35 @@ https://skalavala.github.io/usps/
 For more details about this component, please refer to the documentation at
 https://github.com/custom-components/usps_mail
 """
-import email
-import logging
-import datetime
-from datetime import timedelta
-import imaplib
 import base64
-import sys
+import datetime
+import email
+import imaplib
+import logging
 import os
+import sys
 import requests
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
-from homeassistant.const import (CONF_PASSWORD, CONF_EMAIL, CONF_PORT)
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_PORT
 from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.event import track_time_interval
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 _LOGGER = logging.getLogger(__name__)
-
-REQUIREMENTS = ['imageio']
 
 DOMAIN = 'usps_mail'
 USPS_MAIL_DATA = DOMAIN + '_data'
 CONF_PROVIDER = 'provider'
 CONF_INBOXFOLDER = 'inbox_folder'
-CONF_OUTDIR = 'output_dir'
 
-INTERVAL = timedelta(hours=1)
+INTERVAL = datetime.timedelta(hours=1)
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
         vol.Required(CONF_PROVIDER): cv.string,
         vol.Required(CONF_EMAIL): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
-        vol.Optional(CONF_OUTDIR, default='None'): cv.string,
         vol.Optional(CONF_INBOXFOLDER, default='Inbox'): cv.string,
         vol.Optional(CONF_PORT, default='993'): cv.string,
     })
@@ -55,22 +50,16 @@ def setup(hass, config):
     mailserver = get_mailserver(config[DOMAIN][CONF_PROVIDER])
     port = config[DOMAIN][CONF_PORT]
     inbox_folder = config[DOMAIN][CONF_INBOXFOLDER]
-    output_dir = config[DOMAIN][CONF_OUTDIR]
     username = config[DOMAIN][CONF_EMAIL]
     password = config[DOMAIN][CONF_PASSWORD]
-    usps_mail = UspsMail(hass, mailserver, port, inbox_folder, output_dir, username, password)
+    usps_mail = UspsMail(hass, mailserver, port, inbox_folder, username, password)
 
-    if output_dir != 'None':
-        if not os.path.isdir(output_dir):
-            _LOGGER.critical("The dir %s does not exist.", output_dir)
-            return False
-        else:
-            camera_dir = str(hass.config.path("custom_components/camera/"))
-            camera_file = 'usps_mail.py'
-            camera_full_path = camera_dir + camera_file
-            if not os.path.isfile(camera_full_path):
-                get_sensor(camera_file, camera_dir)
-            load_platform(hass, 'camera', DOMAIN)
+    camera_dir = str(hass.config.path("custom_components/camera/"))
+    camera_file = 'usps_mail.py'
+    camera_full_path = camera_dir + camera_file
+    if not os.path.isfile(camera_full_path):
+        get_camera(camera_file, camera_dir)
+    load_platform(hass, 'camera', DOMAIN)
     def scan_mail_service(call):
         """Set up service for manual trigger."""
         usps_mail.scan_mail(call)
@@ -81,7 +70,7 @@ def setup(hass, config):
 
 class UspsMail:
     """The class for this component"""
-    def __init__(self, hass, mailserver, port, inbox_folder, output_dir, username, password):
+    def __init__(self, hass, mailserver, port, inbox_folder, username, password):
         self.hass = hass
         self.packages = None
         self.letters = None
@@ -90,9 +79,8 @@ class UspsMail:
         self._inbox_folder = inbox_folder
         self._username = username
         self._password = password
-        self._output_dir = output_dir
         self.hass.data[USPS_MAIL_DATA] = {}
-        self.hass.data[USPS_MAIL_DATA]['output_dir'] = output_dir
+        self.hass.data[USPS_MAIL_DATA]['images'] = []
         self.scan_mail('now')
 
     def scan_mail(self, call):
@@ -116,8 +104,8 @@ class UspsMail:
 
     def get_mails(self, account):
         """Get mail count from mail"""
-        import imageio
-        today = get_formatted_date()
+        #today = get_formatted_date()
+        today = '29-Jul-2018'
         _LOGGER.debug('Searching for mails from %s', today)
         image_count = 0
         rv, data = account.search(None, '(SUBJECT "Informed Delivery Daily Digest" SINCE "' + today + '")')
@@ -125,36 +113,17 @@ class UspsMail:
             for num in data[0].split():
                 rv, data = account.fetch(num, '(RFC822)')
                 msg = email.message_from_string(data[0][1].decode('utf-8'))
-                images = []
-                imgfiles = []
                 for part in msg.walk():
                     if part.get_content_maintype() == "multipart":
                         continue
                     if part.get('Content-Disposition') is None:
                         continue
-                    filepath = self._output_dir + part.get_filename()
-                    fp = open(filepath, 'wb')
-                    fp.write(part.get_payload(decode=True))
-                    images.append(filepath)
+                    self.hass.data[USPS_MAIL_DATA]['images'].append(base64.b64encode(part.get_payload(decode=True)))
                     image_count = image_count + 1
-                    fp.close()
-
                 _LOGGER.debug("Found %s mails and images in your email.", image_count)
-
-                if image_count > 0:
-                    if self._output_dir != 'None':
-                        _LOGGER.debug("Creating animated gif out of %s images.", image_count)
-                        for filename in images:
-                            imgfiles.append(imageio.imread(filename))
-                        kargs = {'duration': 5}
-                        imageio.mimsave(self._output_dir + 'USPS.gif', imgfiles, 'GIF', **kargs)
-                        _LOGGER.debug("Cleaning up...")
-                        for image in images:
-                            os.remove(image)
         if image_count == 0:
             _LOGGER.debug("Found %s mails", image_count)
-            if self._output_dir != 'None':
-                default_image(self._output_dir)
+            self.hass.data[USPS_MAIL_DATA]['feed'].append(default_image())
         return image_count
 
     def package_count(self, account):
@@ -202,7 +171,7 @@ def select_folder(account, inbox_folder):
     #account.list()
     account.select(inbox_folder)
 
-def get_sensor(camera_file, camera_dir):
+def get_camera(camera_file, camera_dir):
     """Downloading the camera"""
     _LOGGER.debug('Could not find %s in %s.', camera_file, camera_dir)
     sensor_full_path = camera_dir + camera_file
@@ -220,7 +189,8 @@ def get_sensor(camera_file, camera_dir):
         task_state = False
     return task_state
 
-def default_image(outdir):
+#def default_image(outdir):
+def default_image():
     """Set a default image if there is none from mail"""
     base = """
     iVBORw0KGgoAAAANSUhEUgAAAr4AAAFHCAIAAADIkNhuAAAAAXNSR0IArs4c6QAAAARnQU1BAACx
@@ -343,7 +313,4 @@ def default_image(outdir):
     QEB0AAACogMAEBAdAICA6AAABEQHACAgOgAAAdEBAAiIDgBAQHQAAAKiAwAQEB0AgIDoAAAERAcA
     ICA6AAAB0QEACIgOAEBAdAAAAqIDAFD2f//3/6Ms4IboFqwGAAAAAElFTkSuQmCC
     """
-    imgdata = base64.b64decode(base)
-    filename = outdir + 'USPS.gif'
-    with open(filename, 'wb') as f:
-        f.write(imgdata)
+    return base

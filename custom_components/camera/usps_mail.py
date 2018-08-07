@@ -8,13 +8,12 @@ For more details about this component, please refer to the documentation at
 https://github.com/custom-components/usps_mail
 """
 import logging
-import mimetypes
-import os
+import base64
 
 from homeassistant.components.camera import Camera
 from custom_components.usps_mail import USPS_MAIL_DATA
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 _LOGGER = logging.getLogger(__name__)
 
 CONF_FILE_PATH = 'file_path'
@@ -22,55 +21,32 @@ DEFAULT_NAME = 'USPS Mail Pictures'
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up the Camera that works with local files."""
-    file_path = hass.data[USPS_MAIL_DATA]['output_dir'] + 'USPS.gif'
-    camera = UspsMailCamera(DEFAULT_NAME, file_path)
+    camera = UspsMailCamera(hass, DEFAULT_NAME)
     add_devices([camera])
 
 
 class UspsMailCamera(Camera):
     """Representation of a local file camera."""
 
-    def __init__(self, name, file_path):
+    def __init__(self, hass, name):
         """Initialize USPS Mail Camera component."""
         super().__init__()
-
+        self.is_streaming = False
+        self.hass = hass
         self._name = name
-        self.check_file_path_access(file_path)
-        self._file_path = file_path
-        # Set content type of local file
-        content, _ = mimetypes.guess_type(file_path)
-        if content is not None:
-            self.content_type = content
+        self._total = len(self.hass.data[USPS_MAIL_DATA]['images'])
+        self._count = 0
 
     def camera_image(self):
         """Return image response."""
-        try:
-            with open(self._file_path, 'rb') as file:
-                return file.read()
-        except FileNotFoundError:
-            _LOGGER.warning("Could not read camera %s image from file: %s",
-                            self._name, self._file_path)
-
-    def check_file_path_access(self, file_path):
-        """Check that filepath given is readable."""
-        if not os.access(file_path, os.R_OK):
-            _LOGGER.warning("Could not read camera %s image from file: %s",
-                            self._name, file_path)
-
-    def update_file_path(self, file_path):
-        """Update the file_path."""
-        self.check_file_path_access(file_path)
-        self._file_path = file_path
-        self.schedule_update_ha_state()
+        image = self.hass.data[USPS_MAIL_DATA]['images'][self._count]
+        if self._count == (self._total - 1):
+            self._count = 0
+        else:
+            self._count = self._count + 1
+        return base64.b64decode(image)
 
     @property
     def name(self):
         """Return the name of this camera."""
         return self._name
-
-    @property
-    def device_state_attributes(self):
-        """Return the camera state attributes."""
-        return {
-            'file_path': self._file_path,
-        }
