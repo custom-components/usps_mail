@@ -123,7 +123,7 @@ class UspsMail:
                 _LOGGER.debug("Found %s mails and images in your email.", image_count)
         if image_count == 0:
             _LOGGER.debug("Found %s mails", image_count)
-            self.hass.data[USPS_MAIL_DATA]['feed'].append(default_image())
+            self.hass.data[USPS_MAIL_DATA]['images'].append(default_image())
         return image_count
 
     def package_count(self, account):
