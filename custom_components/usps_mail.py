@@ -21,13 +21,14 @@ from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_PORT
 from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.event import track_time_interval
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = 'usps_mail'
 USPS_MAIL_DATA = DOMAIN + '_data'
 CONF_PROVIDER = 'provider'
 CONF_INBOXFOLDER = 'inbox_folder'
+CONF_CAMERA = 'camera'
 
 INTERVAL = datetime.timedelta(hours=1)
 
@@ -36,6 +37,7 @@ CONFIG_SCHEMA = vol.Schema({
         vol.Required(CONF_PROVIDER): cv.string,
         vol.Required(CONF_EMAIL): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
+        vol.Optional(CONF_CAMERA, default=False): cv.boolean,
         vol.Optional(CONF_INBOXFOLDER, default='Inbox'): cv.string,
         vol.Optional(CONF_PORT, default='993'): cv.string,
     })
@@ -52,14 +54,15 @@ def setup(hass, config):
     inbox_folder = config[DOMAIN][CONF_INBOXFOLDER]
     username = config[DOMAIN][CONF_EMAIL]
     password = config[DOMAIN][CONF_PASSWORD]
+    camera = config[DOMAIN][CONF_CAMERA]
     usps_mail = UspsMail(hass, mailserver, port, inbox_folder, username, password)
-
-    camera_dir = str(hass.config.path("custom_components/camera/"))
-    camera_file = 'usps_mail.py'
-    camera_full_path = camera_dir + camera_file
-    if not os.path.isfile(camera_full_path):
-        get_camera(camera_file, camera_dir)
-    load_platform(hass, 'camera', DOMAIN)
+    if camera:
+        camera_dir = str(hass.config.path("custom_components/camera/"))
+        camera_file = 'usps_mail.py'
+        camera_full_path = camera_dir + camera_file
+        if not os.path.isfile(camera_full_path):
+            get_camera(camera_file, camera_dir)
+        load_platform(hass, 'camera', DOMAIN)
     def scan_mail_service(call):
         """Set up service for manual trigger."""
         usps_mail.scan_mail(call)
@@ -118,7 +121,9 @@ class UspsMail:
                         continue
                     if part.get('Content-Disposition') is None:
                         continue
-                    self.hass.data[USPS_MAIL_DATA]['images'].append(base64.b64encode(part.get_payload(decode=True)))
+                    image = base64.b64encode(part.get_payload(decode=True))
+                    _LOGGER.debug('image data = "%s"', image)
+                    self.hass.data[USPS_MAIL_DATA]['images'].append(image)
                     image_count = image_count + 1
                 _LOGGER.debug("Found %s mails and images in your email.", image_count)
         if image_count == 0:

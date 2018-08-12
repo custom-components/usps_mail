@@ -36,6 +36,7 @@ usps_mail:
 | **password** | | yes | Your mail password, if you have 2FA enabled you need to create a `App password` for this.
 | **inbox_folder** | `Inbox` | no | The folder in your inbox where these mails are
 | **port** | `993` | no | The IMAP port that the provider is using.
+| **camera** | False | no | Set to `True` if you want to use a camera platofrm to show your incomming mail.
 
 ***
 
