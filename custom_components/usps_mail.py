@@ -21,7 +21,7 @@ from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_PORT
 from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.event import track_time_interval
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = 'usps_mail'
@@ -29,6 +29,9 @@ USPS_MAIL_DATA = DOMAIN + '_data'
 CONF_PROVIDER = 'provider'
 CONF_INBOXFOLDER = 'inbox_folder'
 CONF_CAMERA = 'camera'
+CONF_DEFAULT_IMG = 'default_image'
+
+MIN_CAMERA_VERSION = '0.0.3'
 
 INTERVAL = datetime.timedelta(hours=1)
 
@@ -37,6 +40,7 @@ CONFIG_SCHEMA = vol.Schema({
         vol.Required(CONF_PROVIDER): cv.string,
         vol.Required(CONF_EMAIL): cv.string,
         vol.Required(CONF_PASSWORD): cv.string,
+        vol.Optional(CONF_DEFAULT_IMG, default='None'): cv.string,
         vol.Optional(CONF_CAMERA, default=False): cv.boolean,
         vol.Optional(CONF_INBOXFOLDER, default='Inbox'): cv.string,
         vol.Optional(CONF_PORT, default='993'): cv.string,
@@ -55,12 +59,22 @@ def setup(hass, config):
     username = config[DOMAIN][CONF_EMAIL]
     password = config[DOMAIN][CONF_PASSWORD]
     camera = config[DOMAIN][CONF_CAMERA]
-    usps_mail = UspsMail(hass, mailserver, port, inbox_folder, username, password)
+    image = config[DOMAIN][CONF_DEFAULT_IMG]
+    ha_conf_dir = str(hass.config.path())
+    usps_mail = UspsMail(hass, mailserver, port, inbox_folder, username, password, image, ha_conf_dir)
     if camera:
         camera_dir = str(hass.config.path("custom_components/camera/"))
         camera_file = 'usps_mail.py'
         camera_full_path = camera_dir + camera_file
         if not os.path.isfile(camera_full_path):
+            get_camera(camera_file, camera_dir)
+        with open(camera_full_path, 'r') as local:
+            for line in local.readlines():
+                if '__version__' in line:
+                    camera_version = line.split("'")[1]
+                    break
+        local.close()
+        if camera_version != MIN_CAMERA_VERSION:
             get_camera(camera_file, camera_dir)
         load_platform(hass, 'camera', DOMAIN)
     def scan_mail_service(call):
@@ -73,17 +87,18 @@ def setup(hass, config):
 
 class UspsMail:
     """The class for this component"""
-    def __init__(self, hass, mailserver, port, inbox_folder, username, password):
+    def __init__(self, hass, mailserver, port, inbox_folder, username, password, image, ha_conf_dir):
         self.hass = hass
         self.packages = None
         self.letters = None
+        self.ha_conf_dir = ha_conf_dir
         self._mailserver = mailserver
         self._port = port
+        self._default_image = image
         self._inbox_folder = inbox_folder
         self._username = username
         self._password = password
         self.hass.data[USPS_MAIL_DATA] = {}
-        self.hass.data[USPS_MAIL_DATA]['images'] = []
         self.scan_mail('now')
 
     def scan_mail(self, call):
@@ -107,8 +122,8 @@ class UspsMail:
 
     def get_mails(self, account):
         """Get mail count from mail"""
+        self.hass.data[USPS_MAIL_DATA]['images'] = []
         today = get_formatted_date()
-        #today = '29-Jul-2018'
         _LOGGER.debug('Searching for mails from %s', today)
         image_count = 0
         rv, data = account.search(None, '(SUBJECT "Informed Delivery Daily Digest" SINCE "' + today + '")')
@@ -128,7 +143,9 @@ class UspsMail:
                 _LOGGER.debug("Found %s mails and images in your email.", image_count)
         if image_count == 0:
             _LOGGER.debug("Found %s mails", image_count)
-            self.hass.data[USPS_MAIL_DATA]['images'].append(default_image())
+            self.hass.data[USPS_MAIL_DATA]['images'].append(default_image(self.ha_conf_dir, self._default_image))
+        self.hass.data[USPS_MAIL_DATA]['count'] = 0
+        self.hass.data[USPS_MAIL_DATA]['total'] = image_count
         return image_count
 
     def package_count(self, account):
@@ -173,7 +190,6 @@ def get_formatted_date():
 
 def select_folder(account, inbox_folder):
     """Select the folder in the inbox to use"""
-    #account.list()
     account.select(inbox_folder)
 
 def get_camera(camera_file, camera_dir):
@@ -189,13 +205,13 @@ def get_camera(camera_file, camera_dir):
         with open(sensor_full_path, 'wb+') as sensorfile:
             sensorfile.write(response.content)
         task_state = True
+        _LOGGER.debug('Finished downloading the camera.')
     else:
         _LOGGER.critical('Failed to download camera from %s', CAMERA_URL)
         task_state = False
     return task_state
 
-#def default_image(outdir):
-def default_image():
+def default_image(hadir, image_location):
     """Set a default image if there is none from mail"""
     base = """
     iVBORw0KGgoAAAANSUhEUgAAAr4AAAFHCAIAAADIkNhuAAAAAXNSR0IArs4c6QAAAARnQU1BAACx
@@ -318,4 +334,9 @@ def default_image():
     QEB0AAACogMAEBAdAICA6AAABEQHACAgOgAAAdEBAAiIDgBAQHQAAAKiAwAQEB0AgIDoAAAERAcA
     ICA6AAAB0QEACIgOAEBAdAAAAqIDAFD2f//3/6Ms4IboFqwGAAAAAElFTkSuQmCC
     """
+    if image_location != 'None':
+        with open(hadir + image_location, 'r') as img_file:
+            image = img_file.read()
+        img_file.close()
+        base = base64.b64encode(image)
     return base

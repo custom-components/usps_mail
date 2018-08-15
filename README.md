@@ -37,6 +37,7 @@ usps_mail:
 | **inbox_folder** | `Inbox` | no | The folder in your inbox where these mails are
 | **port** | `993` | no | The IMAP port that the provider is using.
 | **camera** | False | no | Set to `True` if you want to use a camera platofrm to show your incomming mail.
+| **default_image** | None | no | Relativ path to custom "NO MAIL" image from the config dir, example `/www/no_mail.png`
 
 ***
 

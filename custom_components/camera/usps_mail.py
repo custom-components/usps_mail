@@ -13,7 +13,7 @@ import base64
 from homeassistant.components.camera import Camera
 from custom_components.usps_mail import USPS_MAIL_DATA
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 _LOGGER = logging.getLogger(__name__)
 
 CONF_FILE_PATH = 'file_path'
@@ -34,16 +34,16 @@ class UspsMailCamera(Camera):
         self.is_streaming = False
         self.hass = hass
         self._name = name
-        self._total = len(self.hass.data[USPS_MAIL_DATA]['images'])
-        self._count = 0
 
     def camera_image(self):
         """Return image response."""
-        image = self.hass.data[USPS_MAIL_DATA]['images'][self._count]
-        if self._count == (self._total - 1):
-            self._count = 0
+        total = self.hass.data[USPS_MAIL_DATA]['total']
+        if self.hass.data[USPS_MAIL_DATA]['count'] == (total):
+            self.hass.data[USPS_MAIL_DATA]['count'] = 0
         else:
-            self._count = self._count + 1
+            self.hass.data[USPS_MAIL_DATA]['count'] = self.hass.data[USPS_MAIL_DATA]['count'] + 1
+        
+        image = self.hass.data[USPS_MAIL_DATA]['images'][self.hass.data[USPS_MAIL_DATA]['count']]
         return base64.b64decode(image)
 
     @property
