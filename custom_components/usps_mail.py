@@ -137,7 +137,6 @@ class UspsMail:
                     if part.get('Content-Disposition') is None:
                         continue
                     image = base64.b64encode(part.get_payload(decode=True))
-                    _LOGGER.debug('image data = "%s"', image)
                     self.hass.data[USPS_MAIL_DATA]['images'].append(image)
                     image_count = image_count + 1
                 _LOGGER.debug("Found %s mails and images in your email.", image_count)
