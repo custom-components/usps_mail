@@ -21,7 +21,7 @@ from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_PORT
 from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.event import track_time_interval
 
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = 'usps_mail'
@@ -334,7 +334,7 @@ def default_image(hadir, image_location):
     ICA6AAAB0QEACIgOAEBAdAAAAqIDAFD2f//3/6Ms4IboFqwGAAAAAElFTkSuQmCC
     """
     if image_location != 'None':
-        with open(hadir + image_location, 'r') as img_file:
+        with open(hadir + image_location, 'rb') as img_file:
             image = img_file.read()
         img_file.close()
         base = base64.b64encode(image)
