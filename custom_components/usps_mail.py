@@ -21,7 +21,7 @@ from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_PORT
 from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.event import track_time_interval
 
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = 'usps_mail'
@@ -109,7 +109,6 @@ class UspsMail:
         except Exception as exx:
             _LOGGER.debug("Error connecting logging into email server.")
             _LOGGER.debug(str(exx))
-            sys.exit(1)
 
         mail_count = self.get_mails(account)
         package_count = self.package_count(account)
@@ -166,7 +165,6 @@ class UspsMail:
             _LOGGER.debug("Logged into your email server successfully!")
         except imaplib.IMAP4.error:
             _LOGGER.critical('Failed to authenticate using the given credentials. Check your username, password, host and port.')
-            sys.exit(1)
         return account
 
 def get_mailserver(provider):
