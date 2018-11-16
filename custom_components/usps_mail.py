@@ -21,7 +21,7 @@ from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_PORT
 from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.event import track_time_interval
 
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = 'usps_mail'
