@@ -76,7 +76,7 @@ def setup(hass, config):
         local.close()
         if camera_version != MIN_CAMERA_VERSION:
             get_camera(camera_file, camera_dir)
-        load_platform(hass, 'camera', DOMAIN)
+        load_platform(hass, 'camera', DOMAIN, {}, config)
     def scan_mail_service(call):
         """Set up service for manual trigger."""
         usps_mail.scan_mail(call)
