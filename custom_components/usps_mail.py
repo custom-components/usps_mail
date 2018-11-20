@@ -21,7 +21,7 @@ from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, CONF_PORT
 from homeassistant.helpers.discovery import load_platform
 from homeassistant.helpers.event import track_time_interval
 
-__version__ = '0.0.9'
+__version__ = '0.1.0'
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = 'usps_mail'
@@ -31,7 +31,7 @@ CONF_INBOXFOLDER = 'inbox_folder'
 CONF_CAMERA = 'camera'
 CONF_DEFAULT_IMG = 'default_image'
 
-MIN_CAMERA_VERSION = '0.0.3'
+MIN_CAMERA_VERSION = '0.0.4'
 
 INTERVAL = datetime.timedelta(hours=1)
 
