@@ -1,3 +1,7 @@
+# ⚠️ Archived
+
+This component has been abandoned for quite some time. A new component and card has been made by different authors and is still actively developed. You can find it's [component here](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages), it's [card here](https://github.com/moralmunky/Home-Assistant-Mail-And-Packages-Custom-Card), and it's [forum thread here](https://community.home-assistant.io/t/mail-and-packages-custom-component-for-ups-fedex-and-usps/118081).
+
 # USPS Mail
 
 A component that give you to info about incoming letters and packages from USPS.\
